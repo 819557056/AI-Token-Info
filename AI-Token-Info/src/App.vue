@@ -1,200 +1,297 @@
 <template>
-  <div id="app" class="container">
-    <header class="input-section">
-      <div class="input-group">
-        <label for="inputTokens">输入Token:</label>
-        <input type="number" id="inputTokens" v-model.number="inputTokens" placeholder="0">
-      </div>
-      <div class="input-group">
-        <label for="outputTokens">输出Token:</label>
-        <input type="number" id="outputTokens" v-model.number="outputTokens" placeholder="0">
-      </div>
-    </header>
+  <el-container class="main-container">
+    <el-header height="auto" class="app-header">
+      <h1 class="title">Token 价格计算器</h1>
+    </el-header>
 
-    <main class="content-section">
-      <div class="content-block">
-        <h2>one-hub</h2>
-        <div class="details">
-          <p>原输入价格: $1.25 /M</p>
-          <p>原输出价格: $10 /M</p>
-          <p>分组折扣: 2.00 倍</p>
-          <hr>
-          <p>实际输入价格：${{ oneHubActualInputPrice.toFixed(6) }}</p>
-          <p>实际输出价格：${{ oneHubActualOutputPrice.toFixed(6) }}</p>
-          <h3>最终价格：${{ oneHubTotalPrice.toFixed(6) }}</h3>
-        </div>
-      </div>
+    <el-main>
+      <el-card class="input-card" shadow="always">
+        <el-form label-position="top">
+          <el-row :gutter="20">
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="输入Token数量">
+                <el-input-number v-model="inputTokens" :min="0" placeholder="请输入输入Token数量" controls-position="right" style="width: 100%;" />
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="输出Token数量">
+                <el-input-number v-model="outputTokens" :min="0" placeholder="请输入输出Token数量" controls-position="right" style="width: 100%;" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+      </el-card>
 
-      <div class="content-block">
-        <h2>new-api</h2>
-        <div class="details">
-          <p>模型倍率: 1.25</p>
-          <p>补全倍率: 4</p>
-          <p>分组倍率: 1</p>
-          <p>提示价格：$2.5 / 1M tokens</p>
-          <p>补全价格：$2.5 * 4 = $10 / 1M tokens (补全倍率: 4)</p>
-          <hr>
-          <p>实际输入价格：${{ newApiActualInputPrice.toFixed(6) }}</p>
-          <p>实际输出价格：${{ newApiActualOutputPrice.toFixed(6) }}</p>
-          <h3>最终价格：${{ newApiTotalPrice.toFixed(6) }}</h3>
-        </div>
-      </div>
-    </main>
-  </div>
+      <el-row :gutter="20" class="content-row">
+        <!-- one-hub 卡片 -->
+        <el-col :xs="24" :lg="12">
+          <el-card class="calculator-card one-hub-card" shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <span>one-hub</span>
+              </div>
+            </template>
+            <el-form label-position="top" label-width="150px">
+              <el-row :gutter="15">
+                <el-col :md="12">
+                  <el-form-item label="原输入单价 ($/M)">
+                    <el-input-number v-model="oneHub.inputPrice" :precision="2" :step="0.01" controls-position="right" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :md="12">
+                  <el-form-item label="原输出单价 ($/M)">
+                    <el-input-number v-model="oneHub.outputPrice" :precision="2" :step="0.01" controls-position="right" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :md="12">
+                  <el-form-item label="分组折扣 (倍)">
+                    <el-input-number v-model="oneHub.discount" :precision="2" :step="0.01" controls-position="right" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+            <el-divider />
+            <div class="results">
+              <p>实际输入价格: <el-tag type="primary" size="large">${{ oneHubInputActual }}</el-tag></p>
+              <p class="formula">输入Token数量 / 1M × 原输入单价 × 分组折扣</p>
+              <p>实际输出价格: <el-tag type="primary" size="large">${{ oneHubOutputActual }}</el-tag></p>
+              <p class="formula">输出Token数量 / 1M × 原输出单价 × 分组折扣</p>
+              <div class="final-price one-hub-final">
+                最终价格：${{ oneHubFinal }}
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+
+        <!-- new-api 卡片 -->
+        <el-col :xs="24" :lg="12">
+          <el-card class="calculator-card new-api-card" shadow="hover">
+            <template #header>
+              <div class="card-header">
+                <span>new-api</span>
+              </div>
+            </template>
+            <el-form label-position="top" label-width="150px">
+              <el-row :gutter="15">
+                <el-col :md="12">
+                  <el-form-item label="模型倍率">
+                    <el-input-number v-model="newApi.modelRate" :precision="2" :step="0.01" controls-position="right" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :md="12">
+                  <el-form-item label="补全倍率">
+                    <el-input-number v-model="newApi.completionRate" :precision="2" :step="0.01" controls-position="right" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :md="12">
+                  <el-form-item label="分组倍率">
+                    <el-input-number v-model="newApi.groupRate" :precision="2" :step="0.01" controls-position="right" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :md="12">
+                  <el-form-item label="提示单价 ($/M)">
+                    <el-input-number v-model="newApi.promptPrice" :precision="2" :step="0.01" controls-position="right" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :md="12">
+                  <el-form-item label="补全单价 ($/M)">
+                    <el-input-number v-model="newApi.completionPrice" :precision="2" :step="0.01" controls-position="right" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+            <el-divider />
+            <div class="results">
+              <p>实际补全价格: <el-tag type="info" size="large">${{ actualCompletionPrice }}</el-tag></p>
+              <p class="formula">补全单价 × 补全倍率</p>
+              <p>实际输入价格: <el-tag type="danger" size="large">${{ newApiInputActual }}</el-tag></p>
+              <p class="formula">输入Token数量 / 1M × 提示单价 × 模型倍率</p>
+              <p>实际输出价格: <el-tag type="danger" size="large">${{ newApiOutputActual }}</el-tag></p>
+              <p class="formula">输出Token数量 / 1M × 实际补全价格 × 分组倍率</p>
+              <div class="final-price new-api-final">
+                最终价格：${{ newApiFinal }}
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </el-main>
+  </el-container>
 </template>
 
-<script>
-export default {
-  name: 'App',
-  data() {
-    return {
-      inputTokens: 0,
-      outputTokens: 0,
-    };
-  },
-  computed: {
-    // One-Hub Calculations
-    oneHubActualInputPrice() {
-      // 实际输入价格：计算公式：( 输入Toekn数量 / 1000000 * 2.5) -> Assuming original price was $1.25, and discount is 2x, so effective price is $1.25 * 2 = $2.5
-      // The user stated: 原输入价格: $1.25 /M and 分组折扣: 2.00 倍.
-      // The formula provided was: ( 输入Toekn数量 / 1000000 * 2.5)
-      // This implies the $2.5 in the formula is the discounted price per million tokens.
-      return (this.inputTokens / 1000000) * 1.25 * 2.00; // Corrected based on "原输入价格" and "分组折扣"
-    },
-    oneHubActualOutputPrice() {
-      // 实际输出价格：计算公式：(输出Toekn数量 / 1000000 * 20) -> Assuming original price was $10, and discount is 2x, so effective price is $10 * 2 = $20
-      // The user stated: 原输出价格: $10 /M and 分组折扣: 2.00 倍.
-      // The formula provided was: (输出Toekn数量 / 1000000 * 20)
-      // This implies the $20 in the formula is the discounted price per million tokens.
-      return (this.outputTokens / 1000000) * 10 * 2.00; // Corrected based on "原输出价格" and "分组折扣"
-    },
-    oneHubTotalPrice() {
-      return this.oneHubActualInputPrice + this.oneHubActualOutputPrice;
-    },
+<script setup>
+import { ref, computed } from "vue";
+import { ElContainer, ElHeader, ElMain, ElCard, ElForm, ElFormItem, ElInputNumber, ElRow, ElCol, ElDivider, ElTag } from 'element-plus';
 
-    // New-API Calculations
-    newApiActualInputPrice() {
-      // 实际输入价格：计算公式：输入Toekn数量 / 1M tokens * $2.5
-      const pricePerMillion = 2.5;
-      return (this.inputTokens / 1000000) * pricePerMillion;
-    },
-    newApiActualOutputPrice() {
-      // 实际输出价格：计算公式：输出Toekn数量 / 1M tokens * $10 * 分组 1
-      // 补全价格：$2.5 * 4 = $10 / 1M tokens (补全倍率: 4)
-      // 分组倍率: 1
-      const completionPricePerMillion = 2.5 * 4; // $10
-      const groupMultiplier = 1;
-      return (this.outputTokens / 1000000) * completionPricePerMillion * groupMultiplier;
-    },
-    newApiTotalPrice() {
-      return this.newApiActualInputPrice + this.newApiActualOutputPrice;
-    }
-  }
-};
+// token 数量
+const inputTokens = ref(0);
+const outputTokens = ref(0);
+
+// one-hub 参数
+const oneHub = ref({
+  inputPrice: 1.25,
+  outputPrice: 10,
+  discount: 2.0,
+});
+
+// new-api 参数
+const newApi = ref({
+  modelRate: 1.25,
+  completionRate: 4,
+  groupRate: 1,
+  promptPrice: 2.5,
+  completionPrice: 10,
+});
+
+// one-hub 计算
+const oneHubInputActual = computed(() =>
+  ((inputTokens.value / 1_000_000) * oneHub.value.inputPrice * oneHub.value.discount).toFixed(4)
+);
+const oneHubOutputActual = computed(() =>
+  ((outputTokens.value / 1_000_000) * oneHub.value.outputPrice * oneHub.value.discount).toFixed(4)
+);
+const oneHubFinal = computed(() =>
+  (parseFloat(oneHubInputActual.value) + parseFloat(oneHubOutputActual.value)).toFixed(4)
+);
+
+// new-api 计算
+const actualCompletionPrice = computed(() =>
+  (newApi.value.completionPrice * newApi.value.completionRate).toFixed(4)
+);
+const newApiInputActual = computed(() =>
+  ((inputTokens.value / 1_000_000) * newApi.value.promptPrice * newApi.value.modelRate).toFixed(4)
+);
+const newApiOutputActual = computed(() =>
+  ((outputTokens.value / 1_000_000) * actualCompletionPrice.value * newApi.value.groupRate).toFixed(4)
+);
+const newApiFinal = computed(() =>
+  (parseFloat(newApiInputActual.value) + parseFloat(newApiOutputActual.value)).toFixed(4)
+);
 </script>
 
-<style>
-.container {
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 20px;
-  font-family: sans-serif;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+<style scoped>
+html, body {
+  overflow-y: hidden !important; /* Attempt to hide body scrollbar */
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.input-section {
+.main-container {
+  padding: 10px; /* Reduced padding */
+  background-color: #f0f2f5;
+  min-height: 100vh;
+  display: flex; /* Added for better flex control */
+  flex-direction: column; /* Added for better flex control */
+}
+
+.app-header {
   display: flex;
-  flex-direction: column; /* Stack input groups vertically */
-  align-items: center; /* Center the groups */
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px; /* Reduced margin */
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
-.input-group {
-  display: flex;
-  flex-direction: row; /* Align label and input horizontally */
-  align-items: center; /* Vertically center label and input */
-  margin-bottom: 10px; /* Add some space between the two input groups */
-}
-
-.input-group label {
-  margin-right: 10px; /* Add space between label and input */
+.title {
+  font-size: 2.2rem; /* Slightly reduced font size */
   font-weight: bold;
-  color: #333;
+  color: #303133; /* Element Plus primary text color */
+  text-align: center;
 }
 
-.input-group input {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1em;
-  width: 200px;
+.el-main { /* Target el-main component for flex behavior */
+  flex-grow: 1;
+  overflow-y: auto; /* Allow main content to scroll if needed, though goal is no scroll */
+  padding-top: 10px !important; /* Adjust el-main's default padding */
+  padding-bottom: 10px !important;
 }
 
-.content-section {
+.input-card {
+  margin-bottom: 15px; /* Reduced margin */
+  border-radius: 12px;
+}
+
+.content-row {
+  margin-bottom: 10px; /* Reduced margin */
+}
+
+.calculator-card {
+  border-radius: 12px;
+  /* height: 100%; Let's remove this to see if it helps with fitting content */
+  display: flex; /* Added for better flex control within card */
+  flex-direction: column; /* Added for better flex control within card */
+}
+
+.calculator-card > :deep(.el-card__body) {
+  flex-grow: 1; /* Make card body take available space */
+}
+
+
+.one-hub-card .card-header span {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #409EFF; /* Element Plus primary color */
+}
+
+.new-api-card .card-header span {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #E6A23C; /* Element Plus warning color for differentiation */
+}
+
+
+.card-header {
   display: flex;
   justify-content: space-between;
-  gap: 20px; /* Adds space between the two content blocks */
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: bold;
 }
 
-.content-block {
-  flex: 1; /* Each block takes equal width */
-  background-color: #fff;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+.results p {
+  font-size: 0.9rem; /* Slightly reduced font size */
+  color: #606266;
+  margin-bottom: 6px; /* Reduced margin */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.results p .el-tag {
+  font-weight: bold;
 }
 
-.content-block h2 {
-  text-align: center;
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #007bff;
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 10px;
-}
 
-.content-block .details p {
-  margin: 10px 0;
-  line-height: 1.6;
-  color: #555;
-}
-
-.content-block .details hr {
-  margin: 15px 0;
-  border: 0;
-  border-top: 1px dashed #ccc;
-}
-
-.content-block .details h3 {
-  margin-top: 15px;
-  color: #28a745;
+.results .formula {
+  font-size: 0.75rem; /* Slightly reduced font size */
+  color: #909399;
+  margin-top: -4px; /* Reduced margin */
+  margin-bottom: 10px; /* Reduced margin */
   text-align: right;
-  font-size: 1.2em;
 }
 
-/* Basic responsive behavior */
-@media (max-width: 768px) {
-  .input-section {
-    flex-direction: column;
-    align-items: center;
-  }
-  .input-group {
-    width: 80%;
-    margin-bottom: 15px;
-  }
-  .input-group input {
-    width: 100%;
-  }
-  .content-section {
-    flex-direction: column;
-  }
-  .content-block {
-    margin-bottom: 20px;
-  }
+.final-price {
+  margin-top: 15px; /* Reduced margin */
+  padding: 12px; /* Reduced padding */
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.one-hub-final {
+  background: linear-gradient(135deg, #409EFF, #79bbff); /* Element Plus primary gradient */
+  box-shadow: 0 4px 15px rgba(64, 158, 255, 0.3);
+}
+
+.new-api-final {
+  background: linear-gradient(135deg, #E6A23C, #ebb563); /* Element Plus warning gradient */
+  box-shadow: 0 4px 15px rgba(230, 162, 60, 0.3);
+}
+
+/* Ensure el-input-number controls are visible and aligned */
+:deep(.el-input-number .el-input__inner) {
+  text-align: left;
 }
 </style>
