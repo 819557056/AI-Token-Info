@@ -1,6 +1,6 @@
 <template>
-  <el-container class="main-container">
-    <el-header height="auto" class="app-header">
+  <el-container class="main-container" style="width: 1024px; margin: 0 auto;">
+    <el-header height="auto" class="app-header" >
       <h1 class="title">Token 价格计算器</h1>
     </el-header>
 
