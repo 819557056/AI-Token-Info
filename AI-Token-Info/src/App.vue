@@ -1,5 +1,5 @@
 <template>
-  <el-container class="main-container" style="width: 1024px; margin: 0 auto;">
+  <el-container class="main-container" :style="containerStyle">
     <el-header height="auto" class="app-header" >
       <h1 class="title">Token 价格计算器</h1>
     </el-header>
@@ -120,8 +120,44 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { ElContainer, ElHeader, ElMain, ElCard, ElForm, ElFormItem, ElInputNumber, ElRow, ElCol, ElDivider, ElTag } from 'element-plus';
+
+// 容器宽度计算
+const windowWidth = ref(window.innerWidth);
+const baseWidth = 1920; // 基准屏幕宽度
+const baseContainerWidth = 1200; // 在基准宽度下的容器宽度
+
+// 计算容器宽度
+const containerWidth = computed(() => {
+  // 计算比例，但确保最小宽度不低于内容需要的最小宽度
+  const ratio = windowWidth.value / baseWidth;
+  const calculatedWidth = Math.round(baseContainerWidth * ratio);
+  // 确保容器宽度不小于内容最小需求
+  return Math.max(calculatedWidth, 320); // 设置一个最小宽度
+});
+
+// 容器样式对象
+const containerStyle = computed(() => {
+  return {
+    width: `${containerWidth.value}px`,
+    margin: '0 auto'
+  };
+});
+
+// 监听窗口大小变化
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+
+// 组件挂载和卸载时添加/移除事件监听
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 
 // token 数量
 const inputTokens = ref(0);
@@ -293,5 +329,26 @@ html, body {
 /* Ensure el-input-number controls are visible and aligned */
 :deep(.el-input-number .el-input__inner) {
   text-align: left;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.el-main {
+  flex: 1;
+  width: 100%;
+}
+
+/* 确保Element Plus的行和其他容器组件也是100%宽度 */
+.el-row, .el-col, .el-card, .el-form {
+  width: 100%;
+}
+
+/* 确保表格和其他大型组件能适应容器 */
+.el-table {
+  width: 100% !important;
 }
 </style>
